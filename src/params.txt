@@ -1,0 +1,1 @@
+read 200 write 200 rewind 200 move 200
