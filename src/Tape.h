@@ -58,12 +58,11 @@ class Tape : TapeInterface {
         }
         void write(int index, int32_t to_write) {
             int32_t& element = (*this)[index];
-            element = to_write;
             std::this_thread::sleep_for(std::chrono::milliseconds(tp.write_delay));
+            element = to_write;
         }
         int32_t& read() {
             std::this_thread::sleep_for(std::chrono::milliseconds(tp.read_delay));
-            //return (*tape)[index];
             return *head_position;
         }
         void move_n(int n) {
@@ -73,13 +72,13 @@ class Tape : TapeInterface {
         }
         int32_t& operator[](int index) {
             int head_index = std::distance((*tape).begin(), head_position);
-            int steps = std::labs(head_index - index);
-            if (index > (int)head_index)
+            int steps = head_index - index;
+            if (steps > 0)
             {
-                move_n(steps);
+                move_back_n(steps);
             }
             else {
-                move_back_n(steps);
+                move_n(-steps);
             }
             return read();
         }

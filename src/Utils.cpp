@@ -8,7 +8,7 @@
 
 
 void Utils::generateBinaryFile (const std::string file_name, const uint sign_number) {
-	ofstream out(file_name, ios::binary | ios::out | ios::in | ios::trunc);
+	ofstream out("./dir/" + file_name, ios::binary | ios::out | ios::in | ios::trunc);
 	uint buff_size = MAX_BUFFER_SIZE > sign_number ? sign_number : MAX_BUFFER_SIZE;
 
     std::vector<int32_t> buff(buff_size);
@@ -35,11 +35,10 @@ void Utils::generateBinaryFile (const std::string file_name, const uint sign_num
 
 
 void Utils::checkSortedFile (std::string file_name) {
-	map<int, int> stat;
 
 	uint buff_size = MAX_BUFFER_SIZE;
 	
-	ifstream in(file_name, ios::binary | ios::ate);
+	ifstream in("./dir/" + file_name, ios::binary | ios::ate);
 	std::vector<int32_t> buffer(buff_size);
 
 	uint pos = 0;
@@ -56,45 +55,30 @@ void Utils::checkSortedFile (std::string file_name) {
 		}
 
 		for (uint i = 0; i < (read_bytes / sizeof(int32_t)); i++) {
-			stat[buffer[i]] += 1;
 			if (is_valid && buffer[i] < value) {
 				is_valid = false;
 	   		}
 	   		value = buffer[i];
     	}
+
     	pos += buff_size * sizeof(int32_t);
 	} while(read_bytes == buff_size * sizeof(int32_t));
 
 	if (!is_valid) {
-		cout << "File is not sorted" << endl;
+		cout << "Tape " << file_name << " is not sorted" << endl;
 	} else {
-		cout << "File is sorted" << endl;
+		cout << "Tape " << file_name <<  " is sorted" << endl;
 	}
 }
 
 void Utils::mergeSortTapes(Tape* src, Tape* buffer, uint spos, uint size) {
     uint i = 0, j = 0, k = 0;
     while (i < spos && j < size - spos)  
-       (*buffer)[k++] = (*src)[i] < (*src)[j + spos] ? (*src)[i++] :  (*src)[j++ + spos];
-	    //buffer->write(k++, (*src)[i] < (*src)[j + spos] ? (*src)[i++] :  (*src)[j++ + spos]);
+	    buffer->write(k++, (*src)[i] < (*src)[j + spos] ? (*src)[i++] :  (*src)[j++ + spos]);
     while (i < spos)  
-        (*buffer)[k++] = (*src)[i++];
-		//buffer->write(k++, (*src)[i++]);
+		buffer->write(k++, (*src)[i++]);
     while (j < size - spos)    
-        (*buffer)[k++] = (*src)[j++ + spos];
-		//buffer->write(k++, (*src)[j++ + spos]);
-}
-
-void Utils::printVectorStat(vector<int32_t> * vec) {
-	map<int, int> stat;
-
-	for (uint i = 0; i < vec->size(); i++) {
-		stat[(*vec)[i]] += 1;
-	}
-
-	for (std::map<int,int>::iterator it = stat.begin(); it != stat.end(); ++it) {
-		cout << "number " << it->first << " : have count " << it->second << endl;
-	}
+		buffer->write(k++, (*src)[j++ + spos]);
 }
 
 int compare (const void * one, const void * two)

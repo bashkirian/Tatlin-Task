@@ -19,11 +19,11 @@ int main(int argc, char ** argv) {
 	}
 	
 	int mem_size = 100; // допустим, 100МБ
-	int max_thread_count = thread::hardware_concurrency(); // максимальное количество потоков
+	int max_thread_count = std::thread::hardware_concurrency(); // максимальное количество потоков
 	string unsorted_file = string(argv[1]);
 	string sorted_file = string(argv[2]);
 
-	ifstream tape_params("./src/params.txt");
+	ifstream tape_params("./params.txt");
 	if (!tape_params.is_open()) {
 		cout << "Could not open params.txt file" << endl;
 		return -1;
@@ -65,7 +65,7 @@ int main(int argc, char ** argv) {
 
 	try {
 		
-		Commander c(mem_size, max_thread_count, unsorted_file, sorted_file);
+		Commander c(mem_size, 1, "./dir/" + unsorted_file, "./dir/" + sorted_file);
 		c.sort();
 		cout << "Successfully saved to file "<< sorted_file << endl;
 	} catch (std::exception & exc) {

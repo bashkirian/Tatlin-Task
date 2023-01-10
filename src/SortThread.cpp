@@ -43,7 +43,3 @@ void SortThread::readBlockSortAndWrite() {
 
     st_locker->unlock();
 }
-
-void SortThread::print() {
-	cout << "Seek : " << st_seek << " number count : " << st_mem_size / sizeof(int32_t) << endl;
-}

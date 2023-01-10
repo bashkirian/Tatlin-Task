@@ -2,10 +2,12 @@
 #include <iostream>
 #include <fstream>
 
+#include <stdlib.h>
 #include "Commander.h"
 #include "SortThread.h"
 #include "Utils.h"
 #include "Tape.h"
+
 Commander::Commander(const uint mem_size, const uint max_thread_count, const string unsorted_file, const string sorted_file) : 
 				c_thread_count(max_thread_count),
 				c_mem_mb_size(mem_size * MB),
@@ -15,7 +17,17 @@ Commander::Commander(const uint mem_size, const uint max_thread_count, const str
 {
 	ifstream in(c_unsorted_file, ifstream::ate | ifstream::binary);
 	c_file_size = in.tellg();
-	in.close();
+
+	// // если всего одно число в ленте
+	// if (c_file_size == 4) {
+    //      std::ofstream ofs(c_sorted_file, std::ios::binary);
+    // 	 ofs << in.rdbuf();
+	// 	 in.close();
+	// 	 ofs.close();
+	// 	 exit(0);
+	// }
+
+	in.close(); 
 
 	c_mem_mb_size = c_mem_mb_size  > c_file_size ? c_file_size : c_mem_mb_size;
 
@@ -23,7 +35,7 @@ Commander::Commander(const uint mem_size, const uint max_thread_count, const str
 		c_thread_count--;
 	}
 
-	if (c_thread_count == 1) { // if we have only one thread, memory must divide on two cause in merge place sort 
+	if (c_thread_count == 1) { // если всего лишь один поток, то память разделяем на два из-за сортировки слиянием без выделения доп.памяти
 		c_mem_mb_size = c_mem_mb_size / 2; 
 	}
 	
@@ -61,7 +73,6 @@ void Commander::sortBlocks () {
 			if (seek_in_bytes + seek + each_thread_mbytes  > c_file_size) {
 				number_count = (c_file_size - (seek_in_bytes + seek)) / sizeof(int32_t);
 			}
-	    	
 	    	SortThread * st = new SortThread(c_sorted_file, c_unsorted_file, number_count, seek + seek_in_bytes, c_locker);
 	    	
 	    	if ((pthread_status = pthread_create(&threads[i], NULL, &SortThread::run, (void*)st)) != 0) {
@@ -70,7 +81,6 @@ void Commander::sortBlocks () {
 
 	    	seek_in_bytes += each_thread_mbytes;
 	    }
-
 	    for (uint i = 0; i < actual_thread_count; i++) { 
 	        if ((pthread_status = pthread_join(threads[i], NULL)) != 0) {
 	        	throw runtime_error("Join thread error with status " + to_string(static_cast<long long>(pthread_status)));
@@ -100,9 +110,6 @@ void Commander::mergeSortedBlocks () {
 	ifstream in(c_sorted_file, ios::binary | ios::in);
 
 	uint half_size = merge_block_size / sizeof(int32_t);
-	
-	// vector<int32_t> * block = new vector<int32_t>(half_size + half_size);
-	// vector<int32_t> * buffer = new vector<int32_t>(half_size + half_size);
 
 	Tape block_tape;
 	Tape buffer_tape;
@@ -118,7 +125,6 @@ void Commander::mergeSortedBlocks () {
 		for (uint lpos = gpos + 1; lpos < block_count; lpos++) {
 			uint read_block_size = (lpos + 1) * merge_block_size > c_file_size ? c_file_size - (lpos) * merge_block_size : merge_block_size;
 			readBinaryFile(block, half_size, lpos * merge_block_size, read_block_size, in);
-			//Utils::mergeSortVectors(block, buffer, half_size, half_size + read_block_size / sizeof(int32_t));
 			Utils::mergeSortTapes(&block_tape, &buffer_tape, half_size, half_size + read_block_size / sizeof(int32_t));
 			vector<int> * v = block;
 			block = buffer;
@@ -134,15 +140,15 @@ void Commander::mergeSortedBlocks () {
 		for (int lpos = block_count - 2 - gpos; lpos >= 0; lpos--) {
 			readBinaryFile(block, 0, lpos * merge_block_size, merge_block_size, in);
 
-		    //Utils::mergeSortVectors(block, buffer, read_block_size / sizeof(int32_t), half_size + read_block_size / sizeof(int32_t));
 			Utils::mergeSortTapes(&block_tape, &buffer_tape, half_size, half_size + read_block_size / sizeof(int32_t));
 			vector<int> * v = buffer;
 			buffer = block;
 			block = v;
+
 			writeBinaryFile(buffer, 0, half_size, lpos * merge_block_size, out);
 		}
+		
 		writeBinaryFile(buffer, half_size, read_block_size / sizeof(int32_t), (block_count - 1 - gpos) * merge_block_size, out);
-		cout <<  (int)(100 * gpos / (block_count / 2)) << "%" << endl;
 	}
 
 	delete block;
